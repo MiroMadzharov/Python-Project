@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import schemas, database
-from app.services.habits import create_habit, get_habit, get_habits, update_habit, checkoff_habit, delete_habit, create_habit_event, get_habit_events, get_streak_for_habit, is_habit_broken
-from app.services.users import get_user_by_email, create_user, pwd_context
+from app.services.habits import (
+    create_habit, get_habit, get_habits, update_habit, checkoff_habit, 
+    delete_habit, create_habit_event, get_habit_events, get_streak_for_habit, 
+    is_habit_broken
+)
 from typing import List
 
+# Create a new API router instance
 router = APIRouter()
 
 @router.post("/", response_model=schemas.Habit)

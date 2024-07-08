@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app import database, schemas, models
-from app.services.habits import create_habit, get_habit, get_habits, update_habit, checkoff_habit, delete_habit, create_habit_event, get_habit_events
+from app.services.habits import (
+    create_habit, get_habit, get_habits, update_habit, checkoff_habit, 
+    delete_habit, create_habit_event, get_habit_events
+)
 from app.services.users import get_user_by_email, create_user
 from typing import List
 from datetime import timedelta
 
+# Create a new API router instance
 router = APIRouter()
 
 @router.get("/habits/", response_model=List[schemas.Habit])
@@ -79,11 +83,15 @@ def get_streak_for_habit_endpoint(habit_id: int, db: Session):
     Returns:
         int: The longest streak for the specified habit.
     """
+    # Retrieve habit events from the database
     events = get_habit_events(db, habit_id)
+    # Sort events by timestamp
     events.sort(key=lambda x: x.timestamp)
     streak = 0
     max_streak = 0
     last_date = None
+
+    # Calculate streaks based on consecutive dates
     for event in events:
         if last_date and event.timestamp.date() == (last_date + timedelta(days=1)):
             streak += 1
@@ -91,4 +99,5 @@ def get_streak_for_habit_endpoint(habit_id: int, db: Session):
             streak = 1
         last_date = event.timestamp.date()
         max_streak = max(max_streak, streak)
+    
     return max_streak

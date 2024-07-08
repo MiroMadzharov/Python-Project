@@ -5,6 +5,7 @@ from app import models, schemas
 from passlib.context import CryptContext
 from datetime import datetime
 
+# Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_user_by_email(db: Session, email: str):
@@ -32,11 +33,14 @@ def create_user(db: Session, user: schemas.UserCreate):
     Returns:
         models.User: Newly created user object
     """
-    hashed_password = pwd_context.hash(user.password)
-    db_user = models.User(
-        first_name=user.first_name, last_name=user.last_name, email=user.email, hashed_password=hashed_password
+    hashed_password = pwd_context.hash(user.password)  # Hash user's password
+    db_user = models.User(  # Create SQLAlchemy model object for User
+        first_name=user.first_name, 
+        last_name=user.last_name, 
+        email=user.email, 
+        hashed_password=hashed_password
     )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.add(db_user)  # Add user to session
+    db.commit()  # Commit transaction
+    db.refresh(db_user)  # Refresh user object to get updated data
+    return db_user  # Return newly created user object
