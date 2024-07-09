@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
 from datetime import datetime
+
 
 class User(Base):
     """
@@ -14,7 +15,7 @@ class User(Base):
         last_name (str): Last name of the user.
         email (str): Email address of the user (unique).
         hashed_password (str): Hashed password of the user.
-    
+
     Relationships:
         habits (relationship): One-to-many relationship with Habit model via owner_id.
     """
@@ -40,7 +41,7 @@ class Habit(Base):
         periodicity (str): Frequency of the habit (e.g., daily, weekly).
         created_at (DateTime): Timestamp of when the habit was created.
         owner_id (int): Foreign key linking to the User who owns this habit.
-    
+
     Relationships:
         owner (relationship): Many-to-one relationship with User model via owner_id.
         events (relationship): One-to-many relationship with HabitEvent model via habit_id.
@@ -66,7 +67,7 @@ class HabitEvent(Base):
         id (int): Primary key identifier for the event.
         habit_id (int): Foreign key linking to the Habit associated with this event.
         timestamp (DateTime): Timestamp of when the event occurred.
-    
+
     Relationships:
         habit (relationship): Many-to-one relationship with Habit model via habit_id.
     """

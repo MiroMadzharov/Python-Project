@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 
+
 class UserCreate(BaseModel):
     """
     Pydantic model for creating a new user.
@@ -16,6 +17,7 @@ class UserCreate(BaseModel):
     last_name: str
     email: str
     password: str
+
 
 class User(BaseModel):
     """
@@ -38,6 +40,7 @@ class User(BaseModel):
     class Config:
         from_attributes = True
 
+
 class HabitCreate(BaseModel):
     """
     Pydantic model for creating a new habit.
@@ -51,6 +54,7 @@ class HabitCreate(BaseModel):
     description: str
     periodicity: str
 
+
 class HabitUpdate(BaseModel):
     """
     Pydantic model for updating an existing habit.
@@ -63,6 +67,7 @@ class HabitUpdate(BaseModel):
     name: Optional[str]
     description: Optional[str]
     periodicity: Optional[str]
+
 
 class Habit(BaseModel):
     """
@@ -89,6 +94,7 @@ class Habit(BaseModel):
     class Config:
         from_attributes = True
 
+
 class HabitEventCreate(BaseModel):
     """
     Pydantic model for creating a new habit event.
@@ -97,6 +103,7 @@ class HabitEventCreate(BaseModel):
         habit_id (int): Identifier of the habit associated with the event.
     """
     habit_id: int
+
 
 class HabitEvent(BaseModel):
     """
@@ -116,3 +123,8 @@ class HabitEvent(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class LongestStreakResponse(BaseModel):
+    longest_streak: int
+    habit_ids: List[int]

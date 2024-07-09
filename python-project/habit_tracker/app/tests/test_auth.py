@@ -5,6 +5,7 @@ from app.main import app
 
 client = TestClient(app)
 
+
 def test_create_user():
     """
     Test case for user creation endpoint (/auth/signup/).
@@ -16,10 +17,13 @@ def test_create_user():
     """
     response = client.post(
         "/auth/signup/",
-        json={"first_name": "John", "last_name": "Doe", "email": "john@example.com", "password": "password"}
+        json={"first_name": "John", "last_name": "Doe",
+              "email": "john@example.com", "password": "password"}
     )
+
     assert response.status_code == 200
     assert response.json()["email"] == "john@example.com"
+
 
 def test_login_user():
     """
@@ -30,6 +34,7 @@ def test_login_user():
     Raises:
         AssertionError: If the expected response does not match the actual response
     """
-    response = client.get("/auth/login/?email=john@example.com&password=password")
+    response = client.get(
+        "/auth/login/?email=john@example.com&password=password")
     assert response.status_code == 200
     assert response.json() == {"message": "Login successful"}

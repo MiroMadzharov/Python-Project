@@ -2,15 +2,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app import database, schemas, models
 from app.services.habits import (
-    create_habit, get_habit, get_habits, update_habit, checkoff_habit, 
-    delete_habit, create_habit_event, get_habit_events
+    get_habits, get_habit_events
 )
-from app.services.users import get_user_by_email, create_user
 from typing import List
 from datetime import timedelta
 
 # Create a new API router instance
 router = APIRouter()
+
 
 @router.get("/habits/", response_model=List[schemas.Habit])
 def get_all_habits_endpoint(user_id: int, db: Session = Depends(database.get_db)):
@@ -25,6 +24,7 @@ def get_all_habits_endpoint(user_id: int, db: Session = Depends(database.get_db)
         List[schemas.Habit]: A list of habits belonging to the user.
     """
     return get_habits(db, user_id=user_id)
+
 
 @router.get("/habits/periodicity/{periodicity}", response_model=List[schemas.Habit])
 def get_habits_by_periodicity_endpoint(user_id: int, periodicity: str, db: Session = Depends(database.get_db)):
@@ -41,22 +41,65 @@ def get_habits_by_periodicity_endpoint(user_id: int, periodicity: str, db: Sessi
     """
     return [habit for habit in get_habits(db, user_id=user_id) if habit.periodicity == periodicity]
 
-@router.get("/habits/longest_streak/", response_model=int)
-def get_longest_streak_endpoint(db: Session = Depends(database.get_db)):
+
+@router.get("/habits/longest_streak/", response_model=schemas.LongestStreakResponse)
+def get_longest_streak_endpoint(user_id: int, db: Session = Depends(database.get_db)):
     """
-    Retrieve the longest streak among all habits for all users.
+    Retrieve the longest streak among all habits for a specific user, including the habit IDs.
 
     Args:
+        user_id (int): The ID of the current user.
         db (Session, optional): SQLAlchemy database session dependency. Defaults to Depends(database.get_db).
 
     Returns:
-        int: The longest streak across all habits.
+        schemas.LongestStreakResponse: The longest streak and corresponding habit IDs.
     """
-    all_habits = db.query(models.Habit).all()
+    user_habits = db.query(models.Habit).filter(
+        models.Habit.owner_id == user_id).all()
     max_streak = 0
-    for habit in all_habits:
-        max_streak = max(max_streak, get_streak_for_habit_endpoint(habit.id, db))
+    habit_ids = []
+
+    for habit in user_habits:
+        current_streak = get_streak_for_habit(habit.id, db)
+        if current_streak > max_streak:
+            max_streak = current_streak
+            habit_ids = [habit.id]
+        elif current_streak == max_streak:
+            habit_ids.append(habit.id)
+
+    return schemas.LongestStreakResponse(longest_streak=max_streak, habit_ids=habit_ids)
+
+
+def get_streak_for_habit(habit_id: int, db: Session):
+    """
+    Helper function to calculate the longest streak for a habit.
+
+    Args:
+        habit_id (int): The ID of the habit for which the longest streak is to be calculated.
+        db (Session): SQLAlchemy database session.
+
+    Returns:
+        int: The longest streak for the specified habit.
+    """
+    # Retrieve habit events from the database
+    events = get_habit_events(db, habit_id)
+    # Sort events by timestamp
+    events.sort(key=lambda x: x.timestamp)
+    streak = 0
+    max_streak = 0
+    last_date = None
+
+    # Calculate streaks based on consecutive dates
+    for event in events:
+        if last_date and event.timestamp.date() == (last_date + timedelta(days=1)):
+            streak += 1
+        else:
+            streak = 1
+        last_date = event.timestamp.date()
+        max_streak = max(max_streak, streak)
+
     return max_streak
+
 
 @router.get("/habits/{habit_id}/longest_streak/", response_model=int)
 def get_longest_streak_for_habit_endpoint(habit_id: int, db: Session = Depends(database.get_db)):
@@ -70,7 +113,8 @@ def get_longest_streak_for_habit_endpoint(habit_id: int, db: Session = Depends(d
     Returns:
         int: The longest streak for the specified habit.
     """
-    return get_streak_for_habit_endpoint(habit_id, db)
+    return get_streak_for_habit(habit_id, db)
+
 
 def get_streak_for_habit_endpoint(habit_id: int, db: Session):
     """
@@ -99,5 +143,5 @@ def get_streak_for_habit_endpoint(habit_id: int, db: Session):
             streak = 1
         last_date = event.timestamp.date()
         max_streak = max(max_streak, streak)
-    
+
     return max_streak

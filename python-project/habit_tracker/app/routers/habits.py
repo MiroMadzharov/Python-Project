@@ -2,14 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import schemas, database
 from app.services.habits import (
-    create_habit, get_habit, get_habits, update_habit, checkoff_habit, 
-    delete_habit, create_habit_event, get_habit_events, get_streak_for_habit, 
+    create_habit, get_habit, get_habits, update_habit, checkoff_habit,
+    delete_habit, create_habit_event, get_habit_events, get_streak_for_habit,
     is_habit_broken
 )
 from typing import List
 
 # Create a new API router instance
 router = APIRouter()
+
 
 @router.post("/", response_model=schemas.Habit)
 def create_habit_endpoint(habit: schemas.HabitCreate, user_id: int, db: Session = Depends(database.get_db)):
@@ -53,7 +54,7 @@ def update_habit_endpoint(habit_id: int, habit: schemas.HabitUpdate, db: Session
 
     Returns:
         schemas.Habit: The updated habit.
-    
+
     Raises:
         HTTPException: If the habit with the given ID is not found (status_code=404).
     """
@@ -64,24 +65,26 @@ def update_habit_endpoint(habit_id: int, habit: schemas.HabitUpdate, db: Session
 
 
 @router.put("/{habit_id}/checkoff", response_model=schemas.Habit)
-def checkoff_habit_endpoint(habit_id: int, db: Session = Depends(database.get_db)):
+def checkoff_habit_endpoint(habit_id: int, user_id: int, db: Session = Depends(database.get_db)):
     """
-    Check off a habit for the current day.
+    Check off a habit for the current day for a specific user.
 
     Args:
         habit_id (int): The ID of the habit to check off.
+        user_id (int): The ID of the current user.
         db (Session, optional): The SQLAlchemy session dependency. Defaults to Depends(database.get_db).
 
     Returns:
         schemas.Habit: The updated habit after checking off.
 
     Raises:
-        HTTPException: If the habit with the given ID is not found (status_code=404).
+        HTTPException: If the habit with the given ID is not found or does not belong to the user (status_code=404).
     """
     db_habit = get_habit(db, habit_id=habit_id)
-    if not db_habit:
-        raise HTTPException(status_code=404, detail="Habit not found")
-    return checkoff_habit(db=db, habit_id=habit_id)
+    if not db_habit or db_habit.owner_id != user_id:
+        raise HTTPException(
+            status_code=404, detail="Habit not found or does not belong to the user")
+    return checkoff_habit(db=db, habit_id=habit_id, user_id=user_id)
 
 
 @router.delete("/{habit_id}", response_model=schemas.Habit)

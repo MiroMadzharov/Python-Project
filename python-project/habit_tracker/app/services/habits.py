@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def create_habit(db: Session, habit: schemas.HabitCreate, user_id: int):
     """
     Create a new habit for a specific user in the database.
@@ -18,11 +19,13 @@ def create_habit(db: Session, habit: schemas.HabitCreate, user_id: int):
     Returns:
         models.Habit: Created habit object.
     """
-    db_habit = models.Habit(**habit.dict(), owner_id=user_id)  # Create SQLAlchemy model object
+    db_habit = models.Habit(
+        **habit.dict(), owner_id=user_id)  # Create SQLAlchemy model object
     db.add(db_habit)  # Add to session
     db.commit()  # Commit transaction to database
     db.refresh(db_habit)  # Refresh object to get updated data from database
     return db_habit  # Return created habit object
+
 
 def get_habit(db: Session, habit_id: int):
     """
@@ -37,6 +40,7 @@ def get_habit(db: Session, habit_id: int):
     """
     return db.query(models.Habit).filter(models.Habit.id == habit_id).first()  # Query habit by ID
 
+
 def get_habits(db: Session, user_id: int):
     """
     Retrieve all habits belonging to a specific user.
@@ -50,6 +54,7 @@ def get_habits(db: Session, user_id: int):
     """
     return db.query(models.Habit).filter(models.Habit.owner_id == user_id).all()  # Query habits by user ID
 
+
 def update_habit(db: Session, habit: schemas.HabitUpdate, habit_id: int):
     """
     Update an existing habit with new data.
@@ -62,7 +67,8 @@ def update_habit(db: Session, habit: schemas.HabitUpdate, habit_id: int):
     Returns:
         models.Habit: Updated habit object if found, otherwise None.
     """
-    db_habit = db.query(models.Habit).filter(models.Habit.id == habit_id).first()  # Query habit by ID
+    db_habit = db.query(models.Habit).filter(
+        models.Habit.id == habit_id).first()  # Query habit by ID
     if not db_habit:
         return None  # Return None if habit not found
     for key, value in habit.dict().items():
@@ -71,25 +77,30 @@ def update_habit(db: Session, habit: schemas.HabitUpdate, habit_id: int):
     db.refresh(db_habit)  # Refresh habit object
     return db_habit  # Return updated habit object
 
-def checkoff_habit(db: Session, habit_id: int):
+
+def checkoff_habit(db: Session, habit_id: int, user_id: int):
     """
     Record a check-off event for a habit.
 
     Args:
         db (Session): SQLAlchemy database session.
         habit_id (int): ID of the habit to check off.
+        user_id (int): ID of the user checking off the habit.
 
     Returns:
         models.Habit: Habit object if found and event recorded, otherwise None.
     """
-    db_habit = db.query(models.Habit).filter(models.Habit.id == habit_id).first()  # Query habit by ID
-    if not db_habit:
-        return None  # Return None if habit not found
-    db_event = models.HabitEvent(habit_id=habit_id, timestamp=datetime.utcnow())  # Create new habit event
+    db_habit = db.query(models.Habit).filter(
+        models.Habit.id == habit_id).first()  # Query habit by ID
+    if not db_habit or db_habit.owner_id != user_id:
+        return None  # Return None if habit not found or does not belong to the user
+    db_event = models.HabitEvent(
+        habit_id=habit_id, timestamp=datetime.utcnow())  # Create new habit event
     db.add(db_event)  # Add event to session
     db.commit()  # Commit transaction
     db.refresh(db_event)  # Refresh event object
     return db_habit  # Return associated habit object
+
 
 def delete_habit(db: Session, habit_id: int):
     """
@@ -102,12 +113,14 @@ def delete_habit(db: Session, habit_id: int):
     Returns:
         models.Habit: Deleted habit object if found, otherwise None.
     """
-    db_habit = db.query(models.Habit).filter(models.Habit.id == habit_id).first()  # Query habit by ID
+    db_habit = db.query(models.Habit).filter(
+        models.Habit.id == habit_id).first()  # Query habit by ID
     if not db_habit:
         return None  # Return None if habit not found
     db.delete(db_habit)  # Delete habit
     db.commit()  # Commit transaction
     return db_habit  # Return deleted habit object
+
 
 def create_habit_event(db: Session, habit_event: schemas.HabitEventCreate):
     """
@@ -120,11 +133,13 @@ def create_habit_event(db: Session, habit_event: schemas.HabitEventCreate):
     Returns:
         models.HabitEvent: Created habit event object.
     """
-    db_event = models.HabitEvent(**habit_event.dict())  # Create SQLAlchemy model object
+    db_event = models.HabitEvent(
+        **habit_event.dict())  # Create SQLAlchemy model object
     db.add(db_event)  # Add event to session
     db.commit()  # Commit transaction
     db.refresh(db_event)  # Refresh event object
     return db_event  # Return created habit event object
+
 
 def get_habit_events(db: Session, habit_id: int):
     """
@@ -138,6 +153,7 @@ def get_habit_events(db: Session, habit_id: int):
         List[models.HabitEvent]: List of habit event objects.
     """
     return db.query(models.HabitEvent).filter(models.HabitEvent.habit_id == habit_id).all()  # Query events by habit ID
+
 
 def get_streak_for_habit(habit_id: int, db: Session):
     """
@@ -154,7 +170,8 @@ def get_streak_for_habit(habit_id: int, db: Session):
     events.sort(key=lambda x: x.timestamp)  # Sort events by timestamp
 
     # Initialize variables for streak calculation
-    periodicity = db.query(models.Habit).filter(models.Habit.id == habit_id).first().periodicity
+    periodicity = db.query(models.Habit).filter(
+        models.Habit.id == habit_id).first().periodicity
     streak = 0
     max_streak = 0
     last_date = None
@@ -175,6 +192,7 @@ def get_streak_for_habit(habit_id: int, db: Session):
 
     return max_streak  # Return maximum streak
 
+
 def is_habit_broken(habit_id: int, db: Session):
     """
     Check if a habit is considered 'broken' based on its periodicity and last event date.
@@ -192,7 +210,8 @@ def is_habit_broken(habit_id: int, db: Session):
 
     # Determine last event date and current date
     last_event_date = max(event.timestamp for event in events).date()
-    periodicity = db.query(models.Habit).filter(models.Habit.id == habit_id).first().periodicity
+    periodicity = db.query(models.Habit).filter(
+        models.Habit.id == habit_id).first().periodicity
     current_date = datetime.utcnow().date()
 
     # Check if habit is broken based on periodicity

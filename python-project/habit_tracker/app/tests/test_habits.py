@@ -6,6 +6,7 @@ from app.main import app
 from app.database import SessionLocal, Base, engine
 from app import models
 
+
 @pytest.fixture(scope="module")
 def test_db():
     """
@@ -20,6 +21,7 @@ def test_db():
     db.close()
     Base.metadata.drop_all(bind=engine)
 
+
 @pytest.fixture(scope="module")
 def client():
     """
@@ -29,6 +31,7 @@ def client():
         TestClient: FastAPI test client
     """
     return TestClient(app)
+
 
 def test_create_habit(client, test_db):
     """
@@ -48,6 +51,7 @@ def test_create_habit(client, test_db):
     assert response.status_code == 200
     assert response.json()["name"] == "Test Habit"
 
+
 def test_read_habits(client, test_db):
     """
     Test case for reading habits.
@@ -60,6 +64,7 @@ def test_read_habits(client, test_db):
     response = client.get("/habits/?user_id=1")
     assert response.status_code == 200
     assert len(response.json()) > 0
+
 
 def test_update_habit(client, test_db):
     """
@@ -79,6 +84,7 @@ def test_update_habit(client, test_db):
     assert response.status_code == 200
     assert response.json()["name"] == "Updated Habit"
 
+
 def test_checkoff_habit(client, test_db):
     """
     Test case for checking off a habit.
@@ -89,9 +95,15 @@ def test_checkoff_habit(client, test_db):
         AssertionError: If the expected response does not match the actual response
     """
     habit_id = client.get("/habits/?user_id=1").json()[0]["id"]
-    response = client.put(f"/habits/{habit_id}/checkoff")
+    response = client.put(f"/habits/{habit_id}/checkoff?user_id=1")
+
+    if response.status_code != 200:
+        print("Response status code:", response.status_code)
+        print("Response JSON:", response.json())
+
     assert response.status_code == 200
     assert response.json()["id"] == habit_id
+
 
 def test_delete_habit(client, test_db):
     """
@@ -107,6 +119,7 @@ def test_delete_habit(client, test_db):
     assert response.status_code == 200
     assert response.json()["id"] == habit_id
 
+
 def test_habit_streak(client, test_db):
     """
     Test case for getting habit streak.
@@ -120,6 +133,7 @@ def test_habit_streak(client, test_db):
     response = client.get(f"/habits/{habit_id}/streak/")
     assert response.status_code == 200
     assert isinstance(response.json(), int)
+
 
 def test_habit_is_broken(client, test_db):
     """
